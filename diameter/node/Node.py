@@ -208,6 +208,7 @@ class Node:
         connkey=None
         self.map_key_conn_lock.acquire()
         for connkey2,conn in self.map_key_conn.iteritems():
+	    self.logger.log(logging.DEBUG,"Looking at '" + conn.peer.host +"'")
             if conn.peer and conn.peer==peer:
                 connkey=connkey2
                 break
@@ -784,7 +785,10 @@ class Node:
         return self.node_state.nextEndToEndIdentifier()
     
     def __doElection(self,cer_host_id):
+	return True
         #5.6.4
+	print self
+	print cer_host_id
         c = cmp(self.settings.host_id,cer_host_id)
         if c==0:
             #this is a misconfigured peer or ourselves.
@@ -831,7 +835,7 @@ class Node:
             return False
         
         conn.peer = Peer(socket_address=conn.fd.getpeername())
-        conn.peer.host = host_id
+        conn.peer.host = host_id 
         conn.host_id = host_id
         
         if self.__handleCEx(msg,conn):
@@ -864,11 +868,18 @@ class Node:
             return False
         host_id = AVP_UTF8String.narrow(avp).queryValue();
         self.logger.log(logging.DEBUG,"Node:Peer's origin-host-id is '"+host_id+"'");
-        
+
+        avp = msg.find(ProtocolConstants.DI_HOST_IP_ADDRESS)
+        if not avp:
+            self.logger.log(logging.WARNING,"Peer did not include host-ip-address in CEA");
+            return False
+        host_ip = AVP_Address.narrow(avp).queryAddress()[1];
+        self.logger.log(logging.DEBUG,"Node:Peer's host-ip-address is '"+host_ip+"'");
+
         conn.peer = Peer(socket_address=conn.fd.getpeername())
-        conn.peer.host = host_id
+        conn.peer.host = host_ip
         conn.host_id = host_id
-        
+       
         rc = self.__handleCEx(msg,conn)
         if rc:
             conn.state=Connection.state_ready;
@@ -913,11 +924,11 @@ class Node:
                     acct_app_id = None
                     for ga in g:
                         if ga.code==ProtocolConstants.DI_VENDOR_ID:
-                            vendor_id = AVP_Unsigned32.narrow(g[0]).queryValue()
-                        elif g.code==ProtocolConstants.DI_AUTH_APPLICATION_ID:
-                            auth_app_id = AVP_Unsigned32.narrow(g).queryValue()
-                        elif g.code==ProtocolConstants.DI_ACCT_APPLICATION_ID:
-                            acct_app_id = AVP_Unsigned32.narrow(g).queryValue()
+                            vendor_id = AVP_Unsigned32.narrow(ga).queryValue()
+                        elif ga.code==ProtocolConstants.DI_AUTH_APPLICATION_ID:
+                            auth_app_id = AVP_Unsigned32.narrow(ga).queryValue()
+                        elif ga.code==ProtocolConstants.DI_ACCT_APPLICATION_ID:
+                            acct_app_id = AVP_Unsigned32.narrow(ga).queryValue()
                         else:
                             raise InvalidAVPValueError(a)
                     if (not vendor_id) or not (auth_app_id or acct_app_id):
@@ -1037,7 +1048,7 @@ class Node:
             msg.append(AVP_Unsigned32(ProtocolConstants.DI_FIRMWARE_REVISION,self.settings.firmware_revision))
 
     def __handleDWR(self,msg,conn):
-        self.logger.log(logging.INFO,"DWR received from "+conn.host_id);
+        self.logger.log(logging.DEBUG,"DWR received from "+conn.host_id);
         conn.timers.markDWR()
         dwa = Message()
         dwa.prepareResponse(msg)
