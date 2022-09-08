@@ -1,0 +1,6 @@
+TODO:
+* A SessionManager module like JavaDiameter
+* Better documentation
+* CER/CEA re-negotiation (watch DIME mailing list)
+* Consider making the classes new-style classes. Are there any benefits?
+* Re-think namespace
