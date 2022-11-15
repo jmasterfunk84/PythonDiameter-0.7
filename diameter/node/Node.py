@@ -758,7 +758,7 @@ class Node:
         return False
     
     def __rejectDisallowedRequest(self,msg,conn):
-        self.logger.log(logging.WARNING,"Rejecting request  from " + conn.peer.host + " (command=" + msg.hdr.command_code + ") because it is not allowed.")
+        self.logger.log(logging.WARNING,"Rejecting request  from " + conn.peer.host + " (command=" + str(msg.hdr.command_code) + ") because it is not allowed.")
         self.__rejectRequest(msg,conn,ProtocolConstants.DIAMETER_RESULT_APPLICATION_UNSUPPORTED)
 
     def __rejectRequest(self,msg,conn,result_code):
